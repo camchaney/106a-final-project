@@ -1,13 +1,13 @@
 #include <Servo.h>
 
-class DrillDriver
+class NeoDriver
 {
 public:
-  DrillDriver(int directionServo, int speedServo);
+  NeoDriver(int directionServo, int speedServo);
   void init();
 
-  void driveDrill();
-  void stopDrill();
+  void driveNeo();
+  void stopNeo();
 
   bool isDriving();
 
@@ -33,23 +33,23 @@ private:
   bool _driving;
 };
 
-DrillDriver::DrillDriver(int directionServo, int speedServo)
+NeoDriver::NeoDriver(int directionServo, int speedServo)
 : _directionPin(directionServo), _speedPin(speedServo)
 {
 }
 
-void DrillDriver::init()
+void NeoDriver::init()
 {
   _DirectionServo.attach(_directionPin);
   _SpeedServo.attach(_speedPin);
 
-  stopDrill();
+  stopNeo();
   // In order to know the direction of the servo, we need to set it as the
   // servo could have been moved while the program wasn't running.
   turnRight();
 }
 
-void DrillDriver::driveDrill()
+void NeoDriver::driveNeo()
 {
   if ( ! _driving )
   {
@@ -73,46 +73,46 @@ void DrillDriver::driveDrill()
   _driving = true;
 }
 
-void DrillDriver::stopDrill()
+void NeoDriver::stopNeo()
 {
   _SpeedServo.write(_stopAngle);
   _driving = false;
 }
 
-bool DrillDriver::isDriving()
+bool NeoDriver::isDriving()
 {
   return _driving;
 }
 
-void DrillDriver::turnRight()
-{
-  _DirectionServo.write(_rightAngle);
-  delay(15);
-  // Overpress to make sure that we get it.
-  for (int i = 1; i <= 10; ++i)
-  {
-    _DirectionServo.write(_rightAngle + i);
-    delay(15);
-  }
-  _DirectionServo.write(_rightAngle);
-  _turnedRight = true;
-}
+// void NeoDriver::turnRight()
+// {
+//   _DirectionServo.write(_rightAngle);
+//   delay(15);
+//   // Overpress to make sure that we get it.
+//   for (int i = 1; i <= 10; ++i)
+//   {
+//     _DirectionServo.write(_rightAngle + i);
+//     delay(15);
+//   }
+//   _DirectionServo.write(_rightAngle);
+//   _turnedRight = true;
+// }
 
-void DrillDriver::turnLeft()
-{
-  _DirectionServo.write(_leftAngle);
-  delay(15);
-  // Overpress to make sure that we get it.
-  for (int i = 1; i <= 10; ++i)
-  {
-    _DirectionServo.write(_leftAngle - i);
-    delay(15);
-  }
-  _DirectionServo.write(_leftAngle);
-  _turnedRight = false;
-}
+// void NeoDriver::turnLeft()
+// {
+//   _DirectionServo.write(_leftAngle);
+//   delay(15);
+//   // Overpress to make sure that we get it.
+//   for (int i = 1; i <= 10; ++i)
+//   {
+//     _DirectionServo.write(_leftAngle - i);
+//     delay(15);
+//   }
+//   _DirectionServo.write(_leftAngle);
+//   _turnedRight = false;
+// }
 
-bool DrillDriver::turnedRight()
-{
-  return _turnedRight;
-}
+// bool NeoDriver::turnedRight()
+// {
+//   return _turnedRight;
+// }
