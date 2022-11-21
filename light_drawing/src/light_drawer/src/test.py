@@ -1,7 +1,7 @@
 import os
 import cv2
 from feature_extractor import FeatureExtractor
-from path_planner import PathPlanner
+# from path_planner import PathPlanner
 
 
 if __name__=="__main__":
@@ -12,9 +12,8 @@ if __name__=="__main__":
         print(f"{i}: {files[i]}")
     selection = int(input("\n..."))
     selection = int(selection)
-    img = cv2.imread(cwd + "/" + files[selection])
+    img = cv2.imread(cwd + "/images/" + files[selection])
     feature_extractor = FeatureExtractor()
-    path_planner = PathPlanner()
     img = feature_extractor.resize_img(img)
     feature_extractor.draw_image(img, "original")
     x = img.shape[0]

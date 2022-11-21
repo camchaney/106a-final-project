@@ -52,7 +52,7 @@ class FeatureExtractor(object):
         """
         x = img.shape[0]
         y = img.shape[1]
-        if y < self.max_image_heightT:
+        if y < self.max_image_height:
             return img
         else:
             scale = self.max_image_height / y

@@ -25,7 +25,8 @@ class PathPlanner(object):
 
         self._planning_scene_publisher = rospy.Publisher('/collision_object', CollisionObject, queue_size=10)
 
-        self._light_control_publisher = rospy.Publisher('/light_toggle', SOME SORT OF BOOLEAN MESSAGE, queue_size=10)
+        #NEED TO FIND SOME SORT OF BOOLEAN MESSAGE TYPE
+        self._light_control_publisher = rospy.Publisher('/light_toggle', None, queue_size=10)
 
         self._group = moveit_commander.MoveGroupCommander(group_name)
 
