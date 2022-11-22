@@ -3,7 +3,8 @@
 
 // Constants
 #define PIN        13 // On Trinket or Gemma, suggest changing this to 1
-#define NUMPIXELS 64 // Popular NeoPixel ring size
+//#define NUMPIXELS 64 // Popular NeoPixel ring size
+#define NUMPIXELS 1    // one neopixel
 const int pin_pot = A3;       // pin for potentiometer dimming
 #define DELAYVAL 500 // Time (in milliseconds) to pause between pixels
 
@@ -17,6 +18,9 @@ void setup() {
   // behavior.
   //TheDriver.init();
 
+  // Pin modes
+  //pinMode(pin_pot, INPUT);
+
   // Begin functions
   Serial.begin(9600);
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
@@ -28,8 +32,8 @@ void setup() {
 void loop() {
   // Potentiometer values
   int sensorValue = analogRead(pin_pot);
-  int mapValue = map(sensorValue, 0, 1, 0, 255);
-  //Serial.println(digitalRead(mapValue));
+  int mapValue = map(sensorValue, 1340, 4096, 0, 255);    // Lowest value = 1340
+  Serial.println(sensorValue);
 
   if (Serial.available())
   {
@@ -41,11 +45,11 @@ void loop() {
       // To-Do: get working for dimming and color change
       case '1':
         // Go to 255 for full blast
-        pixels.setPixelColor(32, pixels.Color(0, 150, 0));
+        pixels.setPixelColor(0, pixels.Color(0, 150, 0));
         pixels.show();   // Send the updated pixel colors to the hardware.
         break;
       case '0':
-        pixels.setPixelColor(32, pixels.Color(0, 0, 0));
+        pixels.setPixelColor(0, pixels.Color(0, 0, 0));
         pixels.show();   // Send the updated pixel colors to the hardware.
         break;
     }
