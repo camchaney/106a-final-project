@@ -35,13 +35,13 @@ class PathPlanner(object):
         self._group.set_workspace([-2, -2, -2, 2, 2, 2])
 
         self.orien_const = OrientationConstraint()
-        self.orien_const.link_name = "right_gripper";
-        self.orien_const.header.frame_id = "base";
-        self.orien_const.orientation.y = -1.0;
-        self.orien_const.absolute_x_axis_tolerance = 0.1;
-        self.orien_const.absolute_y_axis_tolerance = 0.1;
-        self.orien_const.absolute_z_axis_tolerance = 0.1;
-        self.orien_const.weight = 1.0;
+        self.orien_const.link_name = "right_gripper"
+        self.orien_const.header.frame_id = "base"
+        self.orien_const.orientation.y = -1.0
+        self.orien_const.absolute_x_axis_tolerance = 0.1
+        self.orien_const.absolute_y_axis_tolerance = 0.1
+        self.orien_const.absolute_z_axis_tolerance = 0.1
+        self.orien_const.weight = 1.0
 
         rospy.sleep(0.5)
 
