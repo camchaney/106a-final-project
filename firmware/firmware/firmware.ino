@@ -31,6 +31,7 @@ int B = 0;
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 //DrillDriver TheDriver(/*direction*/ 10, /*speed*/ 9);
 
+// Main functions -----------------------------------------------------------------------
 void setup() {
   // For reasons beyond me, it is important that this get called in setup.
   // Attempting to attach the servos in the global constructor causes weird
@@ -59,7 +60,6 @@ void loop() {
   // if (Serial.available())
   // {
   //   char input = Serial.read();
-
   //   switch(input)
   //   {
   //     // For now only on/off
@@ -76,12 +76,12 @@ void loop() {
   recvWithStartEndMarkers();
 
 
-if (newData == true) {
-  parseData();
-  newData = false;
-}
+  if (newData == true) {
+    parseData();
+    newData = false;
+  }
 
-if (cmdState) {
+  if (cmdState) {
     pixels.setPixelColor(pin_use, pixels.Color(R, G, B));
     pixels.show();   // Send the updated pixel colors to the hardware.
     lightState = 1;
@@ -94,41 +94,42 @@ if (cmdState) {
   }
 }
 
+// Subfunctions ------------------------------------------------------------------------
 void recvWithStartEndMarkers() {
-    static boolean recvInProgress = false;
-    static byte ndx = 0;
-    char startMarker = '<';
-    char endMarker = '>';
-    char rc;
+  // Input receiver
+  static boolean recvInProgress = false;
+  static byte ndx = 0;
+  char startMarker = '<';
+  char endMarker = '>';
+  char rc;
  
- // if (Serial.available() > 0) {
-    while (Serial.available() > 0 && newData == false) {
-        rc = Serial.read();
+  while (Serial.available() > 0 && newData == false) {
+      rc = Serial.read();
 
-        if (recvInProgress == true) {
-            if (rc != endMarker) {
-                receivedChars[ndx] = rc;
-                ndx++;
-                if (ndx >= numChars) {
-                    ndx = numChars - 1;
-                }
-            }
-            else {
-                receivedChars[ndx] = '\0'; // terminate the string
-                recvInProgress = false;
-                ndx = 0;
-                newData = true;
-            }
-        }
+      if (recvInProgress == true) {
+          if (rc != endMarker) {
+              receivedChars[ndx] = rc;
+              ndx++;
+              if (ndx >= numChars) {
+                  ndx = numChars - 1;
+              }
+          }
+          else {
+              receivedChars[ndx] = '\0'; // terminate the string
+              recvInProgress = false;
+              ndx = 0;
+              newData = true;
+          }
+      }
 
-        else if (rc == startMarker) {
-            recvInProgress = true;
-        }
-    }
+      else if (rc == startMarker) {
+          recvInProgress = true;
+      }
+  }
 }
 
 void parseData {
-  // Parsing
+  // Input parser
   // Input in form: <R,G,B>
   //  - R = red value from (0,255)
   //  - G = green value from (0,255)
