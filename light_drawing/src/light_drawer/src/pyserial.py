@@ -8,7 +8,7 @@ import serial
 
 def get_serial():
 	try:
-		return serial.Serial('/dev/ttyACM0', 9600)
+		return serial.Serial('/dev/ttyUSB0', 9600)
 	except:
 		return serial.Serial('/dev/ttyACM1', 9600)
 

@@ -67,11 +67,11 @@ void loop() {
     pixels.setPixelColor(pin_use, pixels.Color(0, dimValue, 0));
     pixels.show();   // Send the updated pixel colors to the hardware.
     lightState = 1;
-    Serial.println("on");
+    //Serial.println("on");
   } else {
     pixels.setPixelColor(pin_use, pixels.Color(0, 0, 0));
     pixels.show();   // Send the updated pixel colors to the hardware.
     lightState = 0;
-    Serial.println("off");
+    //Serial.println("off");
   }
 }
