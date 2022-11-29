@@ -6,7 +6,7 @@
 //#define NUMPIXELS 64 // Popular NeoPixel ring size
 // #define NUMPIXELS 1    // one neopixel
 #define NUMPIXELS 16    // one neopixel
-const int pin_use = 0;        // single pin to use for single mode
+int pin_use = 0;        // single pin to use for single mode
 const int pin_pot = A3;       // pin for potentiometer dimming
 #define DELAYVAL 500 // Time (in milliseconds) to pause between pixels
 const float alpha = 0.7;
@@ -130,10 +130,11 @@ void recvWithStartEndMarkers() {
 
 void parseData {
   // Input parser
-  // Input in form: <R,G,B>
+  // Input in form: <R,G,B,i>
   //  - R = red value from (0,255)
   //  - G = green value from (0,255)
   //  - B = blue value from (0,255)
+  //  - i = index of light to actuate
 
   char * strtokIndx; // this is used by strtok() as an index
   //string sep = ",";
@@ -149,4 +150,8 @@ void parseData {
   // Blue value
   strtokIndx = strtok(NULL, ",");           // Get third set
   B = atoi(strtokIndx);
+
+  // LED index
+  strtokIndx = strtok(NULL, ",");           // Get third set
+  pin_use = atoi(strtokIndx);
 }
