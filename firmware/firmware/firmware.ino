@@ -10,12 +10,22 @@ const int pin_use = 0;        // single pin to use for single mode
 const int pin_pot = A3;       // pin for potentiometer dimming
 #define DELAYVAL 500 // Time (in milliseconds) to pause between pixels
 const float alpha = 0.7;
+// Serial
+const byte numChars = 32;     // number of bytes in received chars
 
 // Variables
 int sensorValue = 4096;       // 12 bit max
 int dimValue = 255;
-int cmdState = 0;
+//int cmdState = 0;
+int cmdState = 1;             // keeping at 1 for new mode
 int lightState = 0;           // To-do: make into object (dim val,color,etc.)
+// Serial
+char receivedChars[numChars];
+boolean newData = false;
+// Light control
+int R = 0;
+int G = 0;
+int B = 0;
 
 // Object Initialization
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
@@ -31,7 +41,7 @@ void setup() {
   //pinMode(pin_pot, INPUT);
 
   // Begin functions
-  Serial.begin(9600);
+  Serial.begin(115200);
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
 
   analogReadResolution(12);
@@ -45,26 +55,34 @@ void loop() {
   dimValue = alpha * dimMeas + (1 - alpha)*dimValue;      // value smoothing
   //Serial.println(dimValue);
 
-  if (Serial.available())
-  {
-    char input = Serial.read();
+  // Serial read
+  // if (Serial.available())
+  // {
+  //   char input = Serial.read();
 
-    switch(input)
-    {
-      // For now only on/off
-      // To-Do: get working for dimming and color change
-      case '1':
-        // Go to 255 for full blast
-        cmdState = 1;
-        break;
-      case '0':
-        cmdState = 0;
-        break;
-    }
-  }
+  //   switch(input)
+  //   {
+  //     // For now only on/off
+  //     // To-Do: get working for dimming and color change
+  //     case '1':
+  //       // Go to 255 for full blast
+  //       cmdState = 1;
+  //       break;
+  //     case '0':
+  //       cmdState = 0;
+  //       break;
+  //   }
+  // }
+  recvWithStartEndMarkers();
 
-  if (cmdState) {
-    pixels.setPixelColor(pin_use, pixels.Color(0, dimValue, 0));
+
+if (newData == true) {
+  parseData();
+  newData = false;
+}
+
+if (cmdState) {
+    pixels.setPixelColor(pin_use, pixels.Color(R, G, B));
     pixels.show();   // Send the updated pixel colors to the hardware.
     lightState = 1;
     //Serial.println("on");
@@ -74,4 +92,60 @@ void loop() {
     lightState = 0;
     //Serial.println("off");
   }
+}
+
+void recvWithStartEndMarkers() {
+    static boolean recvInProgress = false;
+    static byte ndx = 0;
+    char startMarker = '<';
+    char endMarker = '>';
+    char rc;
+ 
+ // if (Serial.available() > 0) {
+    while (Serial.available() > 0 && newData == false) {
+        rc = Serial.read();
+
+        if (recvInProgress == true) {
+            if (rc != endMarker) {
+                receivedChars[ndx] = rc;
+                ndx++;
+                if (ndx >= numChars) {
+                    ndx = numChars - 1;
+                }
+            }
+            else {
+                receivedChars[ndx] = '\0'; // terminate the string
+                recvInProgress = false;
+                ndx = 0;
+                newData = true;
+            }
+        }
+
+        else if (rc == startMarker) {
+            recvInProgress = true;
+        }
+    }
+}
+
+void parseData {
+  // Parsing
+  // Input in form: <R,G,B>
+  //  - R = red value from (0,255)
+  //  - G = green value from (0,255)
+  //  - B = blue value from (0,255)
+
+  char * strtokIndx; // this is used by strtok() as an index
+  //string sep = ",";
+  
+  // Red value
+  strtokIndx = strtok(receivedChars,",");   // Get first set
+  R = atoi(strtokIndx);
+
+  // Green value
+  strtokIndx = strtok(NULL, ",");           // Get second set
+  G = atoi(strtokIndx);
+
+  // Blue value
+  strtokIndx = strtok(NULL, ",");           // Get third set
+  B = atoi(strtokIndx);
 }
