@@ -149,7 +149,10 @@ class Controller(object):
             u = self.step_control(t)
 
             # Set the joint velocities
-            dic_vel = {self._limb.joint_names()[i]:float(u[i]) for i in range(len(self._limb.joint_names()))}
+            dic_vel = {}
+            for i in range(len(self._limb.joint_names())):
+                print(f"joint: {self._limb.joint_names()[i]}, input: {u[i]}, type: {type(u[i])}")
+                dic_vel[self._limb.joint_names()[i]] = float(u[i])
             self._limb.set_joint_velocities(dic_vel)
             # Sleep for a defined time (to let the robot move)
             r.sleep()

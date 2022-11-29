@@ -28,8 +28,8 @@ if __name__=="__main__":
     contour_img = feature_extractor.create_empty_img(x, y)
     contours, hierarchy = feature_extractor.extract_contour(img)
     contours = feature_extractor.filter_contours_by_len(contours)
-    for contour in contours:
-        print(contour.squeeze(axis=1).shape)
+    # for contour in contours:
+    #     print(contour.squeeze(axis=1).shape)
     cv2.drawContours(contour_img, contours, -1, (0, 255, 0), 1)
     feature_extractor.draw_image(feature_extractor.invert_black_white(contour_img), "contours")
 
@@ -44,7 +44,7 @@ if __name__=="__main__":
     # print(connected_contours.shape)
     input("check rviz bruh")
     Kp = 0.2 * np.array([0.4, 2, 1.7, 1.5, 2, 2, 3])
-    Kd = 0.01 * np.array([2, 1, 2, 0.5, 0.8, 0.8, 0.8])
+    Kd = 0.02 * np.array([2, 1, 2, 0.5, 1, 0.8, 0.8])
     Ki = 0.01 * np.array([1.4, 1.4, 1.4, 1, 0.6, 0.6, 0.6])
     Kw = np.array([0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9])
     controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))

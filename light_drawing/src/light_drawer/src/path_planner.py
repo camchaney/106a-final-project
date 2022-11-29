@@ -81,7 +81,7 @@ class PathPlanner(object):
                 new_contour_list.append(point)
             last_end = contour[-1]
         np_contours = np.array(new_contour_list)
-        print(np_contours.shape)
+        # print(np_contours.shape)
         return np_contours
         
     def transform_contours(self, contours):
@@ -92,9 +92,9 @@ class PathPlanner(object):
         #TODO
         contours = contours.T
         transformation = np.array([
-            [0, 0, .7],
-            [.8 / 500, 0, -.4],
-            [0, -.8 / 500, .8],
+            [0, 0, .55],
+            [.5 / 500, 0, -.25],
+            [0, -.5 / 500, .6],
         ])
         dim = contours.shape[1]
         unos = np.ones((1, dim)).reshape((1, dim))
@@ -124,13 +124,12 @@ class PathPlanner(object):
         Plans a path for the robot given contours to draw and the end effector orientation constraints
         """
         if orientation_constraints is not None:                
-            slope = (beginning[1] - last_end[1]) / (beginning[0] - last_end[0])
             constraints = Constraints()
             constraints.orientation_constraints = orientation_constraints
             self._group.set_path_constraints(constraints)
         connected_contours = self.connect_contours(contours)
-        for p in connected_contours:
-            print(p)
+        # for p in connected_contours:
+        #     print(p)
         # print(connected_contours)
         connected_contours = self.transform_contours(connected_contours)
         connected_contours = self.ndarray_to_pos(connected_contours)
