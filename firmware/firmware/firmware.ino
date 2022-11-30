@@ -77,6 +77,7 @@ void loop() {
 
 
   if (newData == true) {
+    Serial.println(receivedChars);
     parseData();
     newData = false;
   }
@@ -128,7 +129,7 @@ void recvWithMarkers() {
   }
 }
 
-void parseData {
+void parseData() {
   // Input parser
   // Input in form: <R,G,B,i>
   //  - R = red value from (0,255)
