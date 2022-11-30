@@ -2,11 +2,6 @@ from time import sleep
 import serial
 import serial.tools.list_ports
 
-# l - left
-# r - right
-# d - drive
-# s - stop
-
 class LightController(object):
 
 	def __init__(self):
@@ -23,6 +18,11 @@ class LightController(object):
 			return serial.Serial('/dev/ttyACM1', 115200)
 
 	def send_command(self, com):
+		# Send packet in form: <R,G,B,i>
+		#   - R = red value from (0,255)
+		#   - G = green value from (0,255)
+		#   - B = blue value from (0,255)
+		#   - i = index of light to actuate
 		try:
 			self.port.write(com.encode('utf-8'))
 		except:
@@ -31,11 +31,12 @@ class LightController(object):
 			sleep(5)
 		
 	def on(self):
-		self.send_command("1")
+		# defaulting to green tip light for now
+		self.send_command("<0,255,0,0>")
 		self.status = 1
 
 	def off(self):
-		self.send_command("0")
+		self.send_command("<0,0,0,0>")
 		self.status = 0
 
 	def toggle(self):
