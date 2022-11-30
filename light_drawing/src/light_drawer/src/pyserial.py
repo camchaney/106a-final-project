@@ -15,6 +15,7 @@ class LightController(object):
 			return serial.Serial(serial.tools.list_ports.comports()[0].device, 115200)
 			# return serial.Serial('/dev/ttyUSB0', 9600)
 		except:
+			# this one is irrelevant
 			return serial.Serial('/dev/ttyACM1', 115200)
 
 	def send_command(self, com):
