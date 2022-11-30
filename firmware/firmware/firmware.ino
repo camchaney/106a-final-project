@@ -73,7 +73,7 @@ void loop() {
   //       break;
   //   }
   // }
-  recvWithStartEndMarkers();
+  recvWithMarkers();
 
 
   if (newData == true) {
@@ -95,7 +95,7 @@ void loop() {
 }
 
 // Subfunctions ------------------------------------------------------------------------
-void recvWithStartEndMarkers() {
+void recvWithMarkers() {
   // Input receiver
   static boolean recvInProgress = false;
   static byte ndx = 0;
