@@ -1,23 +1,45 @@
 from time import sleep
 import serial
+import serial.tools.list_ports
 
 # l - left
 # r - right
 # d - drive
 # s - stop
 
-def get_serial():
-	try:
-		return serial.Serial('/dev/ttyUSB0', 9600)
-	except:
-		return serial.Serial('/dev/ttyACM1', 9600)
+class LightController(object):
 
-def send_command(ser, com):
-	try:
-		ser.write(com.encode('utf-8'))
-		return ser
-	except:
-		print("[error] serial failed to write.")
-		ser.close()
-		sleep(5)
-		return send_command(get_serial(), com)
+	def __init__(self):
+		self.port = self.get_serial()
+		print(f"connected to serial port: {self.port}")
+		self.status = 0
+
+	def get_serial(self):
+		try:
+			print(serial.tools.list_ports.comports()[0].device)
+			return serial.Serial(serial.tools.list_ports.comports()[0].device, 115200)
+			# return serial.Serial('/dev/ttyUSB0', 9600)
+		except:
+			return serial.Serial('/dev/ttyACM1', 115200)
+
+	def send_command(self, com):
+		try:
+			self.port.write(com.encode('utf-8'))
+		except:
+			print("[error] serial failed to write.")
+			self.port.close()
+			sleep(5)
+		
+	def on(self):
+		self.send_command("1")
+		self.status = 1
+
+	def off(self):
+		self.send_command("0")
+		self.status = 0
+
+	def toggle(self):
+		if self.status:
+			self.off()
+		else:
+			self.on()

@@ -15,6 +15,8 @@ import intera_interface
 
 from moveit_msgs.msg import RobotTrajectory
 
+from pyserial import LightController
+
 
 
 class Controller(object):
@@ -84,6 +86,9 @@ class Controller(object):
         self._target_positions = list()
         self._target_velocities = list()
 
+        # For controlling light
+        self.light_controller = LightController()
+        self.light_controller.off()
     
     def shutdown(self):
         """
@@ -97,7 +102,7 @@ class Controller(object):
         self._limb.set_joint_velocities(dic_vel)
         rospy.sleep(0.1)
 
-    def execute_plan(self, path, timeout=100.0, log=True):
+    def execute_plan(self, path, timeout=100.0, log=True, toggle_indices={}):
         """
         Execute a given path
 
@@ -134,6 +139,8 @@ class Controller(object):
         
         r = rospy.Rate(200)
 
+        toggled = set()
+
         while not rospy.is_shutdown():
             # Find the time from start
             t = (rospy.Time.now() - startTime).to_sec()
@@ -146,12 +153,15 @@ class Controller(object):
                 return False
 
             # Get the input for this time
-            u = self.step_control(t)
+            u, toggle = self.step_control(t, toggle_indices, toggled)
+
+            if toggle:
+                self.light_controller.toggle()
 
             # Set the joint velocities
             dic_vel = {}
             for i in range(len(self._limb.joint_names())):
-                print(f"joint: {self._limb.joint_names()[i]}, input: {u[i]}, type: {type(u[i])}")
+                # print(f"joint: {self._limb.joint_names()[i]}, input: {u[i]}, type: {type(u[i])}")
                 dic_vel[self._limb.joint_names()[i]] = float(u[i])
             self._limb.set_joint_velocities(dic_vel)
             # Sleep for a defined time (to let the robot move)
@@ -197,21 +207,28 @@ class Controller(object):
 
         return True
 
-    def step_control(self, t):
+    def step_control(self, t, toggle_indices, toggled):
         """
-        Return the control input given the current controller state at time t
+        Return the control input given the current controller state at time t and returns boolean to toggle light
 
         Inputs:
         t: time from start in seconds
+        toggle_indices: indices to toggle light
 
         Output:
         u: 7x' ndarray of velocity commands
-        
+        toggle: True or False on whether to toggle light or not
         """
         # Make sure you're using the latest time
+        toggle = False
         while (not rospy.is_shutdown() and self._curIndex < self._maxIndex and self._path.joint_trajectory.points[self._curIndex+1].time_from_start.to_sec() < t+0.001):
             self._curIndex = self._curIndex+1
 
+        if self._curIndex in toggle_indices and self._curIndex not in toggled:
+            print('TOGGLING')
+            toggle = True
+            toggled.add(self._curIndex)
+        # print(f"Current index: {self._curIndex}") 
 
         current_position = np.array([self._limb.joint_angles()[joint_name] for joint_name in self._path.joint_trajectory.joint_names])
         current_velocity = np.array([self._limb.joint_velocities()[joint_name] for joint_name in self._path.joint_trajectory.joint_names])
@@ -271,7 +288,7 @@ class Controller(object):
 
         ###################### YOUR CODE END ##########################
 
-        return u
+        return u, toggle
 
 
 if __name__ == '__main__': 

@@ -8,6 +8,8 @@ from moveit_msgs.msg import OrientationConstraint, Constraints, CollisionObject
 from geometry_msgs.msg import PoseStamped, Pose
 from shape_msgs.msg import SolidPrimitive
 
+EPS = 1e-4
+
 class PathPlanner(object):
 
     def __init__(self, group_name="right_arm"):
@@ -57,32 +59,33 @@ class PathPlanner(object):
         """
         return abs(((x[0] - y[0])**2 + (x[1] - y[1])**2)**.5)
 
-    def sample(self, contours, rate):
+    def sample(self, contours, toggle_indices, rate):
         new_contour_list = []
+        new_toggle_indices = set()
         for i, contour in enumerate(contours):
             if i % rate == 0:
                 new_contour_list.append(contour)
-        return np.array(new_contour_list)
+        for index in toggle_indices:
+            new_toggle_indices.add(index//rate)
+        return np.array(new_contour_list), new_toggle_indices
 
     def connect_contours(self, contours):
         """
         Connects all the contours in the 'contours' list and adds filler points between contours
         """
         new_contour_list = []
+        toggle_indices = set()
         last_end = None
         for contour in contours:
             contour = np.squeeze(contour, axis=1)
-            if last_end is not None:
-                beginning = contour[0]
-                slope = (beginning[1] - last_end[1]) / (beginning[0] - last_end[0])
-                for i in range(5 * int(self.distance(last_end, beginning))):
-                    np.append(new_contour_list, np.array(last_end[0] + i * .2, last_end[1] + i * .2 * slope))
+            toggle_indices.add(len(new_contour_list))
             for point in contour:
+                # print(point.shape)
                 new_contour_list.append(point)
             last_end = contour[-1]
         np_contours = np.array(new_contour_list)
         # print(np_contours.shape)
-        return np_contours
+        return np_contours, toggle_indices
         
     def transform_contours(self, contours):
         """
@@ -119,6 +122,13 @@ class PathPlanner(object):
         print(f"Number of poses: {len(poses)}")
         return poses
 
+    def toggle_index_scaler(self, path, connected_contours, toggle_indices):
+        scale = float(len(path.joint_trajectory.points)) / float(len(connected_contours))
+        new_toggle_indices = set()
+        for i in toggle_indices:
+            new_toggle_indices.add(int(i//scale))
+        return new_toggle_indices
+
     def plan_along_path(self, contours, orientation_constraints=None):
         """
         Plans a path for the robot given contours to draw and the end effector orientation constraints
@@ -127,14 +137,18 @@ class PathPlanner(object):
             constraints = Constraints()
             constraints.orientation_constraints = orientation_constraints
             self._group.set_path_constraints(constraints)
-        connected_contours = self.connect_contours(contours)
+        connected_contours, toggle_indices = self.connect_contours(contours)
         # for p in connected_contours:
         #     print(p)
         # print(connected_contours)
         connected_contours = self.transform_contours(connected_contours)
         connected_contours = self.ndarray_to_pos(connected_contours)
-        connected_contours = self.sample(connected_contours, 3)
-        return self._group.compute_cartesian_path(connected_contours, .01, 0)
+        connected_contours, toggle_indices = self.sample(connected_contours, toggle_indices, 3)
+        path, _ = self._group.compute_cartesian_path(connected_contours, .01, 0)
+        toggle_indices = self.toggle_index_scaler(path, connected_contours, toggle_indices)
+        toggle_indices.add(1)
+        print(toggle_indices)
+        return path, toggle_indices
 
     def execute_plan(self, plan):
         """
