@@ -7,6 +7,7 @@ import moveit_commander
 from moveit_msgs.msg import OrientationConstraint, Constraints, CollisionObject
 from geometry_msgs.msg import PoseStamped, Pose
 from shape_msgs.msg import SolidPrimitive
+from voxelizer import Voxelizer
 
 EPS = 1e-4
 
@@ -44,6 +45,7 @@ class PathPlanner(object):
         self.orien_const.absolute_y_axis_tolerance = 0.1
         self.orien_const.absolute_z_axis_tolerance = 0.1
         self.orien_const.weight = 1.0
+        self.voxelizer = Voxelizer()
 
         rospy.sleep(0.5)
 
@@ -61,39 +63,32 @@ class PathPlanner(object):
 
     def sample(self, contours, toggle_indices, rate):
         new_contour_list = []
-        new_toggle_indices = set()
         for i, contour in enumerate(contours):
             if i % rate == 0:
                 new_contour_list.append(contour)
-        for index in toggle_indices:
-            new_toggle_indices.add(index//rate)
-        return np.array(new_contour_list), new_toggle_indices
+        return np.array(new_contour_list)
 
     def connect_contours(self, contours):
         """
         Connects all the contours in the 'contours' list and adds filler points between contours
         """
         new_contour_list = []
-        toggle_indices = set()
-        last_end = None
         for contour in contours:
             contour = np.squeeze(contour, axis=1)
-            toggle_indices.add(len(new_contour_list))
             for point in contour:
                 # print(point.shape)
                 new_contour_list.append(point)
-            last_end = contour[-1]
         np_contours = np.array(new_contour_list)
         # print(np_contours.shape)
-        return np_contours, toggle_indices
+        return np_contours
         
     def transform_contours(self, contours):
         """
         contours: a single level list of all connected contours in image frame coordinates
         returns: a single leve list of all the contour coordinates in world frame coordinates 
         """
-        #TODO
         contours = contours.T
+        on_indices = set()
         transformation = np.array([
             [0, 0, .55],
             [.5 / 500, 0, -.25],
@@ -102,7 +97,11 @@ class PathPlanner(object):
         dim = contours.shape[1]
         unos = np.ones((1, dim)).reshape((1, dim))
         homo_coords = np.vstack((contours, unos))
-        return transformation @ homo_coords
+        transformed = transformation @ homo_coords
+        for i in range(transformed.shape[1]):
+            flattened_tuple = self.voxelizer.convert(tuple(transformed[:, i].flatten()))
+            on_indices.add(flattened_tuple)
+        return transformed, on_indices
 
     def ndarray_to_pos(self, arr):
         """
@@ -137,18 +136,15 @@ class PathPlanner(object):
             constraints = Constraints()
             constraints.orientation_constraints = orientation_constraints
             self._group.set_path_constraints(constraints)
-        connected_contours, toggle_indices = self.connect_contours(contours)
+        connected_contours = self.connect_contours(contours)
         # for p in connected_contours:
         #     print(p)
         # print(connected_contours)
-        connected_contours = self.transform_contours(connected_contours)
+        connected_contours, on_indices = self.transform_contours(connected_contours)
         connected_contours = self.ndarray_to_pos(connected_contours)
-        connected_contours, toggle_indices = self.sample(connected_contours, toggle_indices, 3)
+        connected_contours = self.sample(connected_contours, toggle_indices, 3)
         path, _ = self._group.compute_cartesian_path(connected_contours, .01, 0)
-        toggle_indices = self.toggle_index_scaler(path, connected_contours, toggle_indices)
-        toggle_indices.add(1)
-        print(toggle_indices)
-        return path, toggle_indices
+        return path, on_indices
 
     def execute_plan(self, plan):
         """

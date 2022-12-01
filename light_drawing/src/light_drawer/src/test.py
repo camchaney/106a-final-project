@@ -40,7 +40,7 @@ if __name__=="__main__":
     # t2 = simple_circle
     # simple_circle = np.vstack((t1, t2))
     # plan, _ = path_planner.plan_along_path(simple_circle)
-    plan, toggle_indices = path_planner.plan_along_path(contours)
+    plan, on_indices = path_planner.plan_along_path(contours)
     # print(connected_contours.shape)
     input("check rviz bruh")
     Kp = 0.2 * np.array([0.4, 2, 1.7, 1.5, 2, 2, 3])
@@ -48,5 +48,5 @@ if __name__=="__main__":
     Ki = 0.01 * np.array([1.4, 1.4, 1.4, 1, 0.6, 0.6, 0.6])
     Kw = np.array([0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9])
     controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
-    controller.execute_plan(plan, toggle_indices=toggle_indices)
+    controller.execute_plan(plan, on_indices=on_indices)
     

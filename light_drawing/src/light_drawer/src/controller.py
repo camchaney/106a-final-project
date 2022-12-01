@@ -15,8 +15,8 @@ import intera_interface
 
 from moveit_msgs.msg import RobotTrajectory
 
-from pyserial import LightController
-
+from light_controller import LightController
+from voxelizer import Voxelizer
 
 
 class Controller(object):
@@ -89,6 +89,9 @@ class Controller(object):
         # For controlling light
         self.light_controller = LightController()
         self.light_controller.off()
+
+        # For voxelization of 3d space
+        self.voxelizer = Voxelizer()
     
     def shutdown(self):
         """
@@ -102,7 +105,7 @@ class Controller(object):
         self._limb.set_joint_velocities(dic_vel)
         rospy.sleep(0.1)
 
-    def execute_plan(self, path, timeout=100.0, log=True, toggle_indices={}):
+    def execute_plan(self, path, timeout=100.0, log=True, on_indices={}):
         """
         Execute a given path
 
@@ -153,10 +156,12 @@ class Controller(object):
                 return False
 
             # Get the input for this time
-            u, toggle = self.step_control(t, toggle_indices, toggled)
+            u, turn_on = self.step_control(t, on_indices)
 
-            if toggle:
-                self.light_controller.toggle()
+            if turn_on:
+                self.light_controller.on()
+            else:
+                self.light_controller.off()
 
             # Set the joint velocities
             dic_vel = {}
@@ -207,7 +212,7 @@ class Controller(object):
 
         return True
 
-    def step_control(self, t, toggle_indices, toggled):
+    def step_control(self, t, on_indices):
         """
         Return the control input given the current controller state at time t and returns boolean to toggle light
 
@@ -220,14 +225,13 @@ class Controller(object):
         toggle: True or False on whether to toggle light or not
         """
         # Make sure you're using the latest time
-        toggle = False
+        turn_on = False
         while (not rospy.is_shutdown() and self._curIndex < self._maxIndex and self._path.joint_trajectory.points[self._curIndex+1].time_from_start.to_sec() < t+0.001):
             self._curIndex = self._curIndex+1
 
-        if self._curIndex in toggle_indices and self._curIndex not in toggled:
-            print('TOGGLING')
-            toggle = True
-            toggled.add(self._curIndex)
+        if self.voxelizer.convert(tuple(np.array(self._path.joint_trajectory.points[self._curIndex].positions).flatten())) in on_indices:
+            turn_on = True
+        
         # print(f"Current index: {self._curIndex}") 
 
         current_position = np.array([self._limb.joint_angles()[joint_name] for joint_name in self._path.joint_trajectory.joint_names])
@@ -288,7 +292,7 @@ class Controller(object):
 
         ###################### YOUR CODE END ##########################
 
-        return u, toggle
+        return u, turn_on
 
 
 if __name__ == '__main__': 
