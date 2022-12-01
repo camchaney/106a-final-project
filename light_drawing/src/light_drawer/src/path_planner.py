@@ -85,7 +85,9 @@ class PathPlanner(object):
     def transform_contours(self, contours):
         """
         contours: a single level list of all connected contours in image frame coordinates
-        returns: a single leve list of all the contour coordinates in world frame coordinates 
+        returns:
+         - a single leve list of all the contour coordinates in world frame coordinates 
+         - on indices for the light
         """
         contours = contours.T
         on_indices = set()

@@ -158,6 +158,7 @@ class Controller(object):
             # Get the input for this time
             u, turn_on = self.step_control(t, on_indices)
 
+            # Light control
             if turn_on:
                 self.light_controller.on()
             else:
@@ -215,7 +216,7 @@ class Controller(object):
     def step_control(self, t, on_indices):
         """
         Return the control input given the current controller state at time t and returns boolean to toggle light
-
+ 
         Inputs:
         t: time from start in seconds
         toggle_indices: indices to toggle light
@@ -234,6 +235,7 @@ class Controller(object):
         
         # print(f"Current index: {self._curIndex}") 
 
+        # Get current state
         current_position = np.array([self._limb.joint_angles()[joint_name] for joint_name in self._path.joint_trajectory.joint_names])
         current_velocity = np.array([self._limb.joint_velocities()[joint_name] for joint_name in self._path.joint_trajectory.joint_names])
 
