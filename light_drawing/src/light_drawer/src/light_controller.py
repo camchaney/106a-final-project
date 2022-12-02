@@ -32,8 +32,8 @@ class LightController(object):
 			sleep(5)
 		
 	def on(self):
-		# defaulting to green tip light for now
-		self.send_command("<0,255,0,0>")
+		# defaulting to red tip light for now
+		self.send_command("<255,0,0,0>")
 		self.status = 1
 
 	def off(self):

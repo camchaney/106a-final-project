@@ -60,7 +60,7 @@ if __name__=="__main__":
     light_controller = LightController()
     
     controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
-    # controller = path_planner
+    controller = path_planner
     for i in range(len(contour_paths)):
         # controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
         # controller.execute_plan(connector_paths[i])

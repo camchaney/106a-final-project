@@ -139,9 +139,9 @@ class PathPlanner(object):
 
     def make_paths_from_poses(self, poses, connector=False):
         if connector:
-            scaling = .3
+            scaling = .5
         else:
-            scaling = .2
+            scaling = .5
         paths = []
         for pose_list in poses:
             # print(pose_list)
@@ -169,7 +169,7 @@ class PathPlanner(object):
         contours = self.ndarray_to_pos(contours)
         connectors = self.ndarray_to_pos(connectors)
         ##HERREEEE
-        contours = self.sample(contours, 20)
+        contours = self.sample(contours, 6)
         #HEREEE
         # contour_paths = self.make_paths_from_poses(contours)
         # connector_paths = self.make_paths_from_poses(connectors, True)
