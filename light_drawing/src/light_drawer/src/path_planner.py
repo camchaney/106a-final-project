@@ -78,6 +78,7 @@ class PathPlanner(object):
         """
         new_contour_list = [contours[0].squeeze(1)]
         connectors = []
+        connectors.append(np.array(contours[0][0][0]).reshape((1,2)))
         for i in range(len(contours) - 1):
             connecting = np.array((contours[i][0][-1], contours[i + 1][0][0]))
             connectors.append(connecting)
@@ -138,9 +139,9 @@ class PathPlanner(object):
 
     def make_paths_from_poses(self, poses, connector=False):
         if connector:
-            scaling = .2
-        else:
             scaling = .3
+        else:
+            scaling = .2
         paths = []
         for pose_list in poses:
             # print(pose_list)

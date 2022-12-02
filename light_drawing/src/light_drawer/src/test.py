@@ -64,15 +64,15 @@ if __name__=="__main__":
     for i in range(len(contour_paths)):
         # controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
         # controller.execute_plan(connector_paths[i])
-        print(i)
-        path = path_planner.make_paths_from_poses([contour_paths[i]])
-        light_controller.on()
-        controller.execute_plan(path[0])
-
         light_controller.off()
         if i < len(connector_paths):
             path = path_planner.make_paths_from_poses([connector_paths[i]])[0]
             controller.execute_plan(path)
+            
+        print(i)
+        path = path_planner.make_paths_from_poses([contour_paths[i]])
+        light_controller.on()
+        controller.execute_plan(path[0])
         # controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
     
         
