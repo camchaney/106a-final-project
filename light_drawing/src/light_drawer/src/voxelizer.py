@@ -2,7 +2,7 @@
 
 class Voxelizer(object):
 
-    def __init__(self, resolution=.0005):
+    def __init__(self, resolution=.001):
         """
         Voxelizes positions in 3d space for efficient set lookup
 

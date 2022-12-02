@@ -11,8 +11,8 @@ class LightController(object):
 
 	def get_serial(self):
 		try:
-			print(serial.tools.list_ports.comports()[0].device)
-			return serial.Serial(serial.tools.list_ports.comports()[0].device, 115200)
+			print(serial.tools.list_ports.comports()[-1].device)
+			return serial.Serial(serial.tools.list_ports.comports()[-1].device, 115200)
 			# return serial.Serial('/dev/ttyUSB0', 9600)
 		except:
 			# this one is irrelevant

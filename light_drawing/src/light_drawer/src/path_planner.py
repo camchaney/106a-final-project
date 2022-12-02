@@ -61,26 +61,29 @@ class PathPlanner(object):
         """
         return abs(((x[0] - y[0])**2 + (x[1] - y[1])**2)**.5)
 
-    def sample(self, contours, toggle_indices, rate):
-        new_contour_list = []
-        for i, contour in enumerate(contours):
-            if i % rate == 0:
-                new_contour_list.append(contour)
-        return np.array(new_contour_list)
+    def sample(self, contours, rate):
+        list_of_lists = []
+        for contour in contours:
+            new_contour_list = []
+            for i, point in enumerate(contour):
+                if i % rate == 0:
+                    new_contour_list.append(point)
+            new_contour_list = np.array(new_contour_list)
+            list_of_lists.append(new_contour_list)
+        return list_of_lists
 
     def connect_contours(self, contours):
         """
         Connects all the contours in the 'contours' list and adds filler points between contours
         """
-        new_contour_list = []
-        for contour in contours:
-            contour = np.squeeze(contour, axis=1)
-            for point in contour:
-                # print(point.shape)
-                new_contour_list.append(point)
-        np_contours = np.array(new_contour_list)
+        new_contour_list = [contours[0].squeeze(1)]
+        connectors = []
+        for i in range(len(contours) - 1):
+            connecting = np.array((contours[i][0][-1], contours[i + 1][0][0]))
+            connectors.append(connecting)
+            new_contour_list.append(contours[i + 1].squeeze(1))
         # print(np_contours.shape)
-        return np_contours
+        return tuple(new_contour_list), tuple(connectors)
         
     def transform_contours(self, contours):
         """
@@ -89,39 +92,42 @@ class PathPlanner(object):
          - a single leve list of all the contour coordinates in world frame coordinates 
          - on indices for the light
         """
-        contours = contours.T
-        on_indices = set()
-        transformation = np.array([
-            [0, 0, .55],
-            [.5 / 500, 0, -.25],
-            [0, -.5 / 500, .6],
-        ])
-        dim = contours.shape[1]
-        unos = np.ones((1, dim)).reshape((1, dim))
-        homo_coords = np.vstack((contours, unos))
-        transformed = transformation @ homo_coords
-        for i in range(transformed.shape[1]):
-            flattened_tuple = self.voxelizer.convert(tuple(transformed[:, i].flatten()))
-            on_indices.add(flattened_tuple)
-        return transformed, on_indices
+        transformed = []
+        for contour in contours:
+            # print(contour.shape)
+            contour = contour.T
+            transformation = np.array([
+                [0, 0, .65],
+                [.5 / 500, 0, -.25],
+                [0, -.5 / 500, .6],
+            ])
+            dim = contour.shape[1]
+            unos = np.ones((1, dim)).reshape((1, dim))
+            homo_coords = np.vstack((contour, unos))
+            temp = transformation @ homo_coords
+            transformed.append(temp)
+        return transformed
 
-    def ndarray_to_pos(self, arr):
+    def ndarray_to_pos(self, contours):
         """
         Creates an array of pose messages from an ndarray
         """
-        poses = []
-        for i in range(arr.shape[1]):
-            pos = Pose()
-            pos.position.x = arr[0][i]
-            pos.position.y = arr[1][i]
-            pos.position.z = arr[2][i]
-            pos.orientation.x = 1
-            pos.orientation.y = 0
-            pos.orientation.z = 0
-            pos.orientation.w = 0
-            poses.append(pos)
-        print(f"Number of poses: {len(poses)}")
-        return poses
+        list_of_poses = []
+        for arr in contours:
+            poses = []
+            for i in range(arr.shape[1]):
+                pos = Pose()
+                pos.position.x = arr[0][i]
+                pos.position.y = arr[1][i]
+                pos.position.z = arr[2][i]
+                pos.orientation.x = 1
+                pos.orientation.y = 0
+                pos.orientation.z = 0
+                pos.orientation.w = 0
+                poses.append(pos)
+            # print(f"Number of poses: {len(poses)}")
+            list_of_poses.append(poses)
+        return list_of_poses
 
     def toggle_index_scaler(self, path, connected_contours, toggle_indices):
         scale = float(len(path.joint_trajectory.points)) / float(len(connected_contours))
@@ -129,6 +135,19 @@ class PathPlanner(object):
         for i in toggle_indices:
             new_toggle_indices.add(int(i//scale))
         return new_toggle_indices
+
+    def make_paths_from_poses(self, poses, connector=False):
+        if connector:
+            scaling = .2
+        else:
+            scaling = .3
+        paths = []
+        for pose_list in poses:
+            # print(pose_list)
+            path, _ = self._group.compute_cartesian_path(pose_list, .01, 0)
+            path = self._group.retime_trajectory(self._robot.get_current_state(), path, scaling)
+            paths.append(path)
+        return paths
 
     def plan_along_path(self, contours, orientation_constraints=None):
         """
@@ -138,15 +157,25 @@ class PathPlanner(object):
             constraints = Constraints()
             constraints.orientation_constraints = orientation_constraints
             self._group.set_path_constraints(constraints)
-        connected_contours = self.connect_contours(contours)
+        contours, connectors = self.connect_contours(contours)
+        print(f"contours[0]: {contours[0].shape}, connectors[0]: {connectors[0].shape}")
         # for p in connected_contours:
         #     print(p)
         # print(connected_contours)
-        connected_contours, on_indices = self.transform_contours(connected_contours)
-        connected_contours = self.ndarray_to_pos(connected_contours)
-        connected_contours = self.sample(connected_contours, toggle_indices, 3)
-        path, _ = self._group.compute_cartesian_path(connected_contours, .01, 0)
-        return path, on_indices
+        contours = self.transform_contours(contours)
+        connectors = self.transform_contours(connectors)
+        #HEREEE
+        contours = self.ndarray_to_pos(contours)
+        connectors = self.ndarray_to_pos(connectors)
+        ##HERREEEE
+        contours = self.sample(contours, 20)
+        #HEREEE
+        # contour_paths = self.make_paths_from_poses(contours)
+        # connector_paths = self.make_paths_from_poses(connectors, True)
+        # print(on_indices)
+        # print(len(contour_paths))
+        # print(len(connectors))
+        return contours, connectors
 
     def execute_plan(self, plan):
         """

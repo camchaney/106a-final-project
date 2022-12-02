@@ -15,8 +15,9 @@ import intera_interface
 
 from moveit_msgs.msg import RobotTrajectory
 
-from light_controller import LightController
 from voxelizer import Voxelizer
+import example_forward_kinematics as efk
+
 
 
 class Controller(object):
@@ -86,10 +87,6 @@ class Controller(object):
         self._target_positions = list()
         self._target_velocities = list()
 
-        # For controlling light
-        self.light_controller = LightController()
-        self.light_controller.off()
-
         # For voxelization of 3d space
         self.voxelizer = Voxelizer()
     
@@ -105,7 +102,7 @@ class Controller(object):
         self._limb.set_joint_velocities(dic_vel)
         rospy.sleep(0.1)
 
-    def execute_plan(self, path, timeout=100.0, log=True, on_indices={}):
+    def execute_plan(self, path, log=True):
         """
         Execute a given path
 
@@ -149,20 +146,14 @@ class Controller(object):
             t = (rospy.Time.now() - startTime).to_sec()
 
             # If the controller has timed out, stop moving and return false
-            if timeout is not None and t >= timeout:
-                # Set velocities to zero
-                dic_vel = {name:np.zeros(len(self._limb.joint_names())) for name in self._limb.joint_names()}
-                self._limb.set_joint_velocities(dic_vel)
-                return False
+            # if timeout is not None and t >= timeout:
+            #     # Set velocities to zero
+            #     dic_vel = {name:np.zeros(len(self._limb.joint_names())) for name in self._limb.joint_names()}
+            #     self._limb.set_joint_velocities(dic_vel)
+            #     return False
 
             # Get the input for this time
-            u, turn_on = self.step_control(t, on_indices)
-
-            # Light control
-            if turn_on:
-                self.light_controller.on()
-            else:
-                self.light_controller.off()
+            u = self.step_control(t)
 
             # Set the joint velocities
             dic_vel = {}
@@ -177,43 +168,60 @@ class Controller(object):
             if self._curIndex >= self._maxIndex:
                 break
 
-        if log:
-            import matplotlib.pyplot as plt
+        # if log:
+        #     import matplotlib.pyplot as plt
 
-            times = np.array(self._times)
-            actual_positions = np.array(self._actual_positions)
-            actual_velocities = np.array(self._actual_velocities)
-            target_positions = np.array(self._target_positions)
-            target_velocities = np.array(self._target_velocities)
-            plt.figure()
-            joint_num = len(self._path.joint_trajectory.joint_names)
-            for joint in range(joint_num):
-                plt.subplot(joint_num,2,2*joint+1)
-                plt.plot(times, actual_positions[:,joint], label='Actual')
-                plt.plot(times, target_positions[:,joint], label='Desired')
-                plt.xlabel("Time (t)")
-                if(joint == 0):
-                    plt.ylabel(self._path.joint_trajectory.joint_names[joint] + " Position Error")
-                else:
-                    plt.ylabel(self._path.joint_trajectory.joint_names[joint])
-                plt.legend()
+        #     times = np.array(self._times)
+        #     actual_positions = np.array(self._actual_positions)
+        #     actual_velocities = np.array(self._actual_velocities)
+        #     target_positions = np.array(self._target_positions)
+        #     target_velocities = np.array(self._target_velocities)
+        #     plt.figure()
+        #     joint_num = len(self._path.joint_trajectory.joint_names)
+        #     for joint in range(joint_num):
+        #         plt.subplot(joint_num,2,2*joint+1)
+        #         plt.plot(times, actual_positions[:,joint], label='Actual')
+        #         plt.plot(times, target_positions[:,joint], label='Desired')
+        #         plt.xlabel("Time (t)")
+        #         if(joint == 0):
+        #             plt.ylabel(self._path.joint_trajectory.joint_names[joint] + " Position Error")
+        #         else:
+        #             plt.ylabel(self._path.joint_trajectory.joint_names[joint])
+        #         plt.legend()
 
-                plt.subplot(joint_num,2,2*joint+2)
-                plt.plot(times, actual_velocities[:,joint], label='Actual')
-                plt.plot(times, target_velocities[:,joint], label='Desired')
-                plt.xlabel("Time (t)")
-                if(joint == 0):
-                    plt.ylabel(self._path.joint_trajectory.joint_names[joint] + " Velocity Error")
-                else:
-                    plt.ylabel(self._path.joint_trajectory.joint_names[joint])
-                plt.legend()
+        #         plt.subplot(joint_num,2,2*joint+2)
+        #         plt.plot(times, actual_velocities[:,joint], label='Actual')
+        #         plt.plot(times, target_velocities[:,joint], label='Desired')
+        #         plt.xlabel("Time (t)")
+        #         if(joint == 0):
+        #             plt.ylabel(self._path.joint_trajectory.joint_names[joint] + " Velocity Error")
+        #         else:
+        #             plt.ylabel(self._path.joint_trajectory.joint_names[joint])
+        #         plt.legend()
 
-            print("Close the plot window to continue")
-            plt.show()
+        #     print("Close the plot window to continue")
+        #     plt.show()
 
         return True
 
-    def step_control(self, t, on_indices):
+
+    def permute(self, nums):
+        # helper
+        def recursive(nums, perm=[], res=[]):
+            if not nums: # -- NOTE [1] 
+                res.append(perm[::]) #  -- NOTE [2] - append a copy of the perm at the leaf before we start popping/backtracking
+
+            for i in range(len(nums)): # [1,2,3]
+                newNums = nums[:i] + nums[i+1:]
+                perm.append(nums[i])
+                recursive(newNums, perm, res) # - recursive call will make sure I reach the leaf
+                perm.pop() # -- NOTE [3] 
+            return res
+
+        return recursive(nums)
+
+
+    def step_control(self, t):
         """
         Return the control input given the current controller state at time t and returns boolean to toggle light
  
@@ -226,18 +234,32 @@ class Controller(object):
         toggle: True or False on whether to toggle light or not
         """
         # Make sure you're using the latest time
-        turn_on = False
         while (not rospy.is_shutdown() and self._curIndex < self._maxIndex and self._path.joint_trajectory.points[self._curIndex+1].time_from_start.to_sec() < t+0.001):
             self._curIndex = self._curIndex+1
 
-        if self.voxelizer.convert(tuple(np.array(self._path.joint_trajectory.points[self._curIndex].positions).flatten())) in on_indices:
-            turn_on = True
         
         # print(f"Current index: {self._curIndex}") 
 
         # Get current state
         current_position = np.array([self._limb.joint_angles()[joint_name] for joint_name in self._path.joint_trajectory.joint_names])
         current_velocity = np.array([self._limb.joint_velocities()[joint_name] for joint_name in self._path.joint_trajectory.joint_names])
+
+
+        # permuted = np.array(self.permute(self._path.joint_trajectory.points[self._curIndex].positions))
+        # print(f"NEW for {current_position}")
+        # for i in range(permuted.shape[0]):
+        #     joints = permuted[i]
+        #     print(permuted.shape)
+        #     print(joints, i)
+        #     # target_so3 = efk.baxter_forward_kinematics_from_angles(np.array(self._path.joint_trajectory.points[self._curIndex].positions))
+        #     target_so3 = efk.baxter_forward_kinematics_from_angles(joints)
+        #     target_end = target_so3[:3, 3].flatten()
+        #     print(target_end)
+        # # print(self.voxelizer.convert(tuple(target_end)))
+        # # print(self._path.joint_trajectory.joint_names)
+
+        # if self.voxelizer.convert(tuple(target_end)) in on_indices:
+        #     turn_on = True
 
         if self._curIndex < self._maxIndex:
             time_low = self._path.joint_trajectory.points[self._curIndex].time_from_start.to_sec()
@@ -294,7 +316,7 @@ class Controller(object):
 
         ###################### YOUR CODE END ##########################
 
-        return u, turn_on
+        return u
 
 
 if __name__ == '__main__': 

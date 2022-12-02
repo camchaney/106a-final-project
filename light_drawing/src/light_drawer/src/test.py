@@ -8,6 +8,8 @@ from intera_interface import Limb
 from feature_extractor import FeatureExtractor
 from path_planner import PathPlanner
 from controller import Controller
+from light_controller import LightController
+from moveit_msgs.msg import OrientationConstraint
 
 
 if __name__=="__main__":
@@ -40,13 +42,40 @@ if __name__=="__main__":
     # t2 = simple_circle
     # simple_circle = np.vstack((t1, t2))
     # plan, _ = path_planner.plan_along_path(simple_circle)
-    plan, on_indices = path_planner.plan_along_path(contours)
+    orien_const = OrientationConstraint()
+    orien_const.link_name = "right_hand";
+    orien_const.header.frame_id = "base";
+    orien_const.orientation.y = -1.0;
+    orien_const.absolute_x_axis_tolerance = 0.1;
+    orien_const.absolute_y_axis_tolerance = 0.1;
+    orien_const.absolute_z_axis_tolerance = 0.1;
+    orien_const.weight = 1.0;
+    contour_paths, connector_paths = path_planner.plan_along_path(contours, [orien_const])
     # print(connected_contours.shape)
     input("check rviz bruh")
     Kp = 0.2 * np.array([0.4, 2, 1.7, 1.5, 2, 2, 3])
-    Kd = 0.02 * np.array([2, 1, 2, 0.5, 1, 0.8, 0.8])
+    Kd = 0.01 * np.array([2, 1, 2, 0.5, 1, 0.8, 0.8])
     Ki = 0.01 * np.array([1.4, 1.4, 1.4, 1, 0.6, 0.6, 0.6])
     Kw = np.array([0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9])
+    light_controller = LightController()
+    
     controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
-    controller.execute_plan(plan, on_indices=on_indices)
+    # controller = path_planner
+    for i in range(len(contour_paths)):
+        # controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
+        # controller.execute_plan(connector_paths[i])
+        print(i)
+        path = path_planner.make_paths_from_poses([contour_paths[i]])
+        light_controller.on()
+        controller.execute_plan(path[0])
+
+        light_controller.off()
+        if i < len(connector_paths):
+            path = path_planner.make_paths_from_poses([connector_paths[i]])[0]
+            controller.execute_plan(path)
+        # controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
+    
+        
+    light_controller.off()
+
     
