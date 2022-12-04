@@ -5,7 +5,7 @@
 #define PIN        13 // On Trinket or Gemma, suggest changing this to 1
 //#define NUMPIXELS 64 // Popular NeoPixel ring size
 // #define NUMPIXELS 1    // one neopixel
-#define NUMPIXELS 16    // one neopixel
+#define NUMPIXELS 27    // one neopixel
 int pin_use = 0;        // single pin to use for single mode
 const int pin_pot = A3;       // pin for potentiometer dimming
 #define DELAYVAL 500 // Time (in milliseconds) to pause between pixels
@@ -55,30 +55,13 @@ void loop() {
   int dimMeas = map(sensorValue, 0, 4096, 0, 255);    // (measurement) Lowest value = 1340
   dimValue = alpha * dimMeas + (1 - alpha)*dimValue;      // value smoothing
   //Serial.println(dimValue);
-
-  // Serial read
-  // if (Serial.available())
-  // {
-  //   char input = Serial.read();
-  //   switch(input)
-  //   {
-  //     // For now only on/off
-  //     // To-Do: get working for dimming and color change
-  //     case '1':
-  //       // Go to 255 for full blast
-  //       cmdState = 1;
-  //       break;
-  //     case '0':
-  //       cmdState = 0;
-  //       break;
-  //   }
-  // }
   recvWithMarkers();
 
 
   if (newData == true) {
     Serial.println(receivedChars);
     parseData();
+    //Serial.println(pin_use);
     newData = false;
   }
 
