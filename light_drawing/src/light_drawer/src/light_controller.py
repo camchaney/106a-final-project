@@ -40,6 +40,11 @@ class LightController(object):
 		self.send_command("<0,0,0,0>")
 		self.status = 0
 
+	def clear(self):
+		# turn off all LEDs
+		self.send_command("<0,0,0,69>")
+		self.status = 0
+
 	def toggle(self):
 		if self.status:
 			self.off()

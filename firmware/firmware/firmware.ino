@@ -137,5 +137,11 @@ void parseData() {
 
   // LED index
   strtokIndx = strtok(NULL, ",");           // Get third set
-  pin_use = atoi(strtokIndx);
+
+  if (atoi(strtokIndx) != 69) {
+    pin_use = atoi(strtokIndx);
+  } else {
+    pixels.clear();         // for pixel strand speed testing
+  }
+  
 }
