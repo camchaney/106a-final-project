@@ -90,7 +90,7 @@ class PathPlanner(object):
         """
         contours: a single level list of all connected contours in image frame coordinates
         returns:
-         - a single leve list of all the contour coordinates in world frame coordinates 
+         - a single level list of all the contour coordinates in world frame coordinates 
          - on indices for the light
         """
         transformed = []
@@ -98,9 +98,9 @@ class PathPlanner(object):
             # print(contour.shape)
             contour = contour.T
             transformation = np.array([
-                [0, 0, .65],
-                [.5 / 500, 0, -.25],
-                [0, -.5 / 500, .6],
+                [0,         0,          .65],
+                [.5 / 500,  0,          -.25],
+                [0,         -.5 / 500,  .6],
             ])
             dim = contour.shape[1]
             unos = np.ones((1, dim)).reshape((1, dim))

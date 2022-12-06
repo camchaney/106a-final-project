@@ -17,28 +17,51 @@ class PixelExtractor(object):
         """
         self.max_image_height = max_image_height
         self.image_width = image_width
-        self.num_pixels = 26
+        self.num_leds = 26
         self.pixel_spacing = 6.48       # pixel spacing (mm)
+
+    def create_contour(self, img):
+        """
+        creates contours for given image
+        """
+        while 
+        grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        grayscale = cv2.blur(grayscale, (5, 5))
+        thresh_img = cv2.adaptiveThreshold(
+            grayscale,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY,
+            self.threshold_sample_size,
+            0,
+        )
+        return contours
 
 
     def resize_img(self, img):
         """
         Normalizes the size of the image
         """
-        x = img.shape[0]
-        y = img.shape[1]
-        if y < self.max_image_height:
+        rows = img.shape[0]
+        columns = img.shape[1]
+        if columns < self.max_image_height:
             return img
         else:
-            scale = self.max_image_height / y
-            return cv2.resize(img, (int(y * scale), int(x * scale)))
+            scale = self.max_image_height / columns
+            return cv2.resize(img, (int(columns * scale), int(rows * scale)))
 
-    def invert_black_white(self, img):
+    def get_colors(self, img):
         """
-        Inverts the contour image so it is white contours on black
+        
+        img: img that has been resized down to number of LEDs
         """
-        return abs(img - 255)
-
+        width = img.shape[1]
+        height = img.shape[2]
+        height_left = height
+        colors = []
+        while height_left < 0:
+            if 
+            colors.append(height)
     def create_empty_img(self, x, y):
         """
         Creates an empty image array of size 'x' by 'y'

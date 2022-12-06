@@ -29,14 +29,26 @@ if __name__=="__main__":
     pixel_extractor = PixelExtractor()
     img = pixel_extractor.resize_img(img)
     pixel_extractor.draw_image(img, "original")
-    x = img.shape[0]            # image size, x
-    y = img.shape[1]            # image size, y
-    print(x)
+    rows = img.shape[0]      # not width of image
+    columns = img.shape[1]
+    #print(x)
 
-    # 
+    # Physical properties
+    width_mm = 500         # (mm)
+    num_leds = 26
+    pixel_spacing = 6.48
+    width_pixels = int(width_mm / pixel_spacing) + 1
+    scale = width_pixels / img.shape[1]
+    width = int(img.shape[1] * scale)
+    height = int(img.shape[0] * scale)
+    dim = (width, height)
+    img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)      # 1 pixel = 1 led unit
+    pixel_extractor.draw_image(img, "scaled")
+
+    
 
     # Create contours
-    contour_img = pixel_extractor.create_empty_img(x, y)
+    contour_img = pixel_extractor.create_empty_img(rows, columns)
     contours, hierarchy = pixel_extractor.extract_contour(img)
     contours = pixel_extractor.filter_contours_by_len(contours)
     # for contour in contours:
