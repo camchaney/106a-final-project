@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import rospy
 from intera_interface import Limb
-from feature_extractor import FeatureExtractor
+from pixel_extractor import PixelExtractor
 from path_planner import PathPlanner
 from controller import Controller
 from light_controller import LightController
@@ -25,21 +25,24 @@ if __name__=="__main__":
     selection = int(selection)
     img = cv2.imread(cwd + "/images/" + files[selection])
 
-    # Modify image for real world
-    feature_extractor = FeatureExtractor()
-    img = feature_extractor.resize_img(img)
-    feature_extractor.draw_image(img, "original")
+    # Normalize image
+    pixel_extractor = PixelExtractor()
+    img = pixel_extractor.resize_img(img)
+    pixel_extractor.draw_image(img, "original")
     x = img.shape[0]            # image size, x
     y = img.shape[1]            # image size, y
+    print(x)
+
+    # 
 
     # Create contours
-    contour_img = feature_extractor.create_empty_img(x, y)
-    contours, hierarchy = feature_extractor.extract_contour(img)
-    contours = feature_extractor.filter_contours_by_len(contours)
+    contour_img = pixel_extractor.create_empty_img(x, y)
+    contours, hierarchy = pixel_extractor.extract_contour(img)
+    contours = pixel_extractor.filter_contours_by_len(contours)
     # for contour in contours:
     #     print(contour.squeeze(axis=1).shape)
     cv2.drawContours(contour_img, contours, -1, (0, 255, 0), 1)
-    feature_extractor.draw_image(feature_extractor.invert_black_white(contour_img), "contours")
+    pixel_extractor.draw_image(pixel_extractor.invert_black_white(contour_img), "contours")
 
     # Plan paths
     path_planner = PathPlanner()
@@ -85,5 +88,3 @@ if __name__=="__main__":
     
         
     light_controller.off()
-
-    
