@@ -50,3 +50,7 @@ class LightController(object):
 			self.off()
 		else:
 			self.on()
+
+	def on_color(self, b, g, r, i):
+		self.send_command(f"<{r},{g},{b},{i}>")
+		self.status = 1

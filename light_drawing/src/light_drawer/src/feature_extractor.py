@@ -78,3 +78,24 @@ class FeatureExtractor(object):
         """
         cv2.imshow(name, img)
         cv2.waitKey(0)
+
+    def extract_color(self, img, contours):
+        """
+        Takes an image and it's contours and returns the color for each contour
+        """
+        colors = []
+        for contour in contours:
+            contour = contour.squeeze(1)
+            avg_color = [0, 0, 0]
+            for point in contour:
+                x, y = point[0], point[1]
+                avg_color[0] += img[y][x][0]
+                avg_color[1] += img[y][x][1]
+                avg_color[2] += img[y][x][2]
+            
+            avg_color[0] = round(avg_color[0]/contour.shape[0])
+            avg_color[1] = round(avg_color[1]/contour.shape[0])
+            avg_color[2] = round(avg_color[2]/contour.shape[0])
+            colors.append(avg_color)
+
+        return colors
