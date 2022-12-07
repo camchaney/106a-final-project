@@ -45,12 +45,44 @@ if __name__=="__main__":
     img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)      # 1 pixel = 1 led unit
     pixel_extractor.draw_image(img, "scaled")
 
-    
+    # Create contours and get colors
+    #width = img.shape[1]       # already defined above
+    #height = img.shape[0]
+    contours = []
+    connectors = []
+    colors = []
+    pos_path = 1       # positive path boolean
+    x_val = 0
+    y_val = 0
+    # assuming (0,0) is at top left
+    while y_val < height:
+        if pos_path:
+            contours = contours.append(np.array([[0,y_val],[width,y_val]]))
+            connector = contours.append(np.array([[width,y_val],[width,y_val+num_leds]]))
+            if (y_val + num_leds) <= height:
+                colors = colors.append(img[y_val:y_val+num_leds,:])
+            else:
+                y_diff = y_val - height
+                dark = np.zeros((y_diff,width,3))
+                img_bottom = np.vstack((img[y_val:,:],dark))
+                colors = colors.append(img_bottom)
+        else:
+            contours = contours.append(np.array([[width,y_val],[0,y_val]]))
+            connector = contours.append(np.array([[0,y_val],[0,y_val+num_leds]]))
+            if (y_val + num_leds) <= height:
+                colors = colors.append(img[y_val:y_val+num_leds,::-1])
+            else:
+                y_diff = y_val - height
+                dark = np.zeros((y_diff,width,3))
+                img_bottom = np.vstack((img[y_val:,::-1],dark))
+                colors = colors.append(img_bottom)
+            # there might be an extra connector
+        y_val += num_leds
 
-    # Create contours
-    contour_img = pixel_extractor.create_empty_img(rows, columns)
-    contours, hierarchy = pixel_extractor.extract_contour(img)
-    contours = pixel_extractor.filter_contours_by_len(contours)
+    # Draw contours
+    contour_img = pixel_extractor.create_empty_img(height, width)
+    # contours, hierarchy = pixel_extractor.extract_contour(img)
+    # contours = pixel_extractor.filter_contours_by_len(contours)
     # for contour in contours:
     #     print(contour.squeeze(axis=1).shape)
     cv2.drawContours(contour_img, contours, -1, (0, 255, 0), 1)
@@ -72,6 +104,7 @@ if __name__=="__main__":
     orien_const.absolute_y_axis_tolerance = 0.1;
     orien_const.absolute_z_axis_tolerance = 0.1;
     orien_const.weight = 1.0;
+    # NOTE: Does this create the correct connector paths??
     contour_paths, connector_paths = path_planner.plan_along_path(contours, [orien_const])
     # print(connected_contours.shape)
     input("check rviz bruh")
@@ -87,16 +120,16 @@ if __name__=="__main__":
     for i in range(len(contour_paths)):
         # controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
         # controller.execute_plan(connector_paths[i])
-        light_controller.off()
+        #light_controller.off()
         if i < len(connector_paths):
             path = path_planner.make_paths_from_poses([connector_paths[i]])[0]
             controller.execute_plan(path)
             
         print(i)
         path = path_planner.make_paths_from_poses([contour_paths[i]])
-        light_controller.on()
+        #light_controller.on()
         controller.execute_plan(path[0])
         # controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
     
         
-    light_controller.off()
+    light_controller.clear()
