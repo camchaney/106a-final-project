@@ -57,25 +57,28 @@ if __name__=="__main__":
     # assuming (0,0) is at top left
     while y_val < height:
         if pos_path:
+            img[0:5] img[5:0]
             contours = contours.append(np.array([[0,y_val],[width,y_val]]))
             connector = contours.append(np.array([[width,y_val],[width,y_val+num_leds]]))
             if (y_val + num_leds) <= height:
-                colors = colors.append(img[y_val:y_val+num_leds,:])
+                colors_ = img[y_val+num_leds:y_val,:]
+                colors = colors.append(colors_[::-1,:])
             else:
                 y_diff = y_val - height
                 dark = np.zeros((y_diff,width,3))
                 img_bottom = np.vstack((img[y_val:,:],dark))
-                colors = colors.append(img_bottom)
+                colors = colors.append(img_bottom[::-1,:])
         else:
             contours = contours.append(np.array([[width,y_val],[0,y_val]]))
             connector = contours.append(np.array([[0,y_val],[0,y_val+num_leds]]))
             if (y_val + num_leds) <= height:
-                colors = colors.append(img[y_val:y_val+num_leds,::-1])
+                colors_ = img[y_val:y_val+num_leds,::-1]
+                colors = colors.append(colors_[::-1,:])
             else:
                 y_diff = y_val - height
                 dark = np.zeros((y_diff,width,3))
                 img_bottom = np.vstack((img[y_val:,::-1],dark))
-                colors = colors.append(img_bottom)
+                colors = colors.append(img_bottom[::-1,:])
             # there might be an extra connector
         y_val += num_leds
 
