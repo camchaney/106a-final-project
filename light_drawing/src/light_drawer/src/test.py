@@ -108,6 +108,8 @@ if __name__=="__main__":
 	cv2.waitKey(0)
 	cv2.destroyAllWindows()
 	contours, _ = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+	# countors = imutils.grab_contours(contours)
+	contours = feature_extractor.filter_contours_by_len(contours)
 
 	# img = feature_extractor.resize_img(img)
 	# feature_extractor.draw_image(img, "original")
