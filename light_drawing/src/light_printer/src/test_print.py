@@ -82,6 +82,7 @@ if __name__=="__main__":
             # there might be an extra connector
         y_val += num_leds
 
+
     # Draw contours
     contour_img = pixel_extractor.create_empty_img(height, width)
     # contours, hierarchy = pixel_extractor.extract_contour(img)
@@ -126,6 +127,7 @@ if __name__=="__main__":
         #light_controller.off()
         if i < len(connector_paths):
             path = path_planner.make_paths_from_poses([connector_paths[i]])[0]
+            # TO-DO: publish color data to topic and make sure it runs at same time as excecute
             controller.execute_plan(path)
             
         print(i)

@@ -6,10 +6,10 @@ print('Original Dimensions : ',img.shape)
  
 # scale = 0.6 # ratio of original size
 des_width = 26
-scale = des_width / img.shape[0]
+scale = des_width / img.shape[1]
 #print(scale_percent)
-width = int(img.shape[0] * scale)
-height = int(img.shape[1] * scale)
+width = int(img.shape[1] * scale)
+height = int(img.shape[0] * scale)
 dim = (width, height)
 #print(width)
 

@@ -130,6 +130,22 @@ class PathPlanner(object):
             list_of_poses.append(poses)
         return list_of_poses
 
+    def color_to_cmd(self,colors):
+        """
+        Creates commands for the light wand from a color list.
+        colors: (num_leds)x(width)x3 list of colors (check exact shape!!)
+        """
+        cmd_mat = []
+        for i in range(width):
+            cmd = ""
+            for j in range(1,26):
+                r = colors[j,i,0]
+                g = colors[j,i,1]
+                b = colors[j,i,2]
+                cmd = cmd + f"<{r},{g},{b},{j}>"        # might need to add line end
+            cmd_mat = cmd_mat.append(cmd)
+        return cmd_mat
+
     def toggle_index_scaler(self, path, connected_contours, toggle_indices):
         scale = float(len(path.joint_trajectory.points)) / float(len(connected_contours))
         new_toggle_indices = set()
