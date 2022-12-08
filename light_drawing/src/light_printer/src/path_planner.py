@@ -86,7 +86,7 @@ class PathPlanner(object):
         # print(np_contours.shape)
         return tuple(new_contour_list), tuple(connectors)
         
-    def transform_contours(self, contours):
+    def transform_contours(self, contours, img_width):
         """
         contours: a single level list of all connected contours in image frame coordinates
         returns:
@@ -97,10 +97,12 @@ class PathPlanner(object):
         for contour in contours:
             # print(contour.shape)
             contour = contour.T
+            d = 6.48 / 1000.0       # step size
+            width_m = d * (img_width - 1)
             transformation = np.array([
-                [0,         0,          .65],
-                [.5 / 500,  0,          -.25],
-                [0,         -.5 / 500,  .6],
+                [0,     0,              .65],
+                [d,     0,      -.25],
+                [0,     - d,    .6],
             ])
             dim = contour.shape[1]
             unos = np.ones((1, dim)).reshape((1, dim))
@@ -139,9 +141,9 @@ class PathPlanner(object):
         for i in range(width):
             cmd = ""
             for j in range(1,26):
-                r = colors[j,i,0]
+                b = colors[j,i,0]
                 g = colors[j,i,1]
-                b = colors[j,i,2]
+                r = colors[j,i,2]
                 cmd = cmd + f"<{r},{g},{b},{j}>"        # might need to add line end
             cmd_mat = cmd_mat.append(cmd)
         return cmd_mat
@@ -166,7 +168,7 @@ class PathPlanner(object):
             paths.append(path)
         return paths
 
-    def plan_along_path(self, contours, orientation_constraints=None):
+    def plan_along_path(self, contours, img_width, orientation_constraints=None):
         """
         Plans a path for the robot given contours to draw and the end effector orientation constraints
         """
@@ -180,7 +182,7 @@ class PathPlanner(object):
         #     print(p)
         # print(connected_contours)
         contours = self.transform_contours(contours)
-        connectors = self.transform_contours(connectors)
+        connectors = self.transform_contours(connectors,img_width)
         #HEREEE
         contours = self.ndarray_to_pos(contours)
         connectors = self.ndarray_to_pos(connectors)

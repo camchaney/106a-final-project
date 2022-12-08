@@ -36,7 +36,7 @@ if __name__=="__main__":
     # Physical properties
     width_mm = 500         # (mm)
     num_leds = 26
-    pixel_spacing = 6.48
+    pixel_spacing = 6.48    # (mm)
     width_pixels = int(width_mm / pixel_spacing) + 1
     scale = width_pixels / img.shape[1]
     width = int(img.shape[1] * scale)
@@ -83,6 +83,8 @@ if __name__=="__main__":
         y_val += num_leds
 
 
+
+
     # Draw contours
     contour_img = pixel_extractor.create_empty_img(height, width)
     # contours, hierarchy = pixel_extractor.extract_contour(img)
@@ -109,7 +111,7 @@ if __name__=="__main__":
     orien_const.absolute_z_axis_tolerance = 0.1;
     orien_const.weight = 1.0;
     # NOTE: Does this create the correct connector paths??
-    contour_paths, connector_paths = path_planner.plan_along_path(contours, [orien_const])
+    contour_paths, connector_paths = path_planner.plan_along_path(contours, width, [orien_const])
     # print(connected_contours.shape)
     input("check rviz bruh")
     Kp = 0.2 * np.array([0.4, 2, 1.7, 1.5, 2, 2, 3])
@@ -119,8 +121,8 @@ if __name__=="__main__":
     light_controller = LightController()
     
     # Do motion control
-    # controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))           # lab 7 controller
-    controller = path_planner           # moveit controller
+    controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))           # lab 7 controller
+    # controller = path_planner           # moveit controller
     for i in range(len(contour_paths)):
         # controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
         # controller.execute_plan(connector_paths[i])
