@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+
+import os
+import cv2
+import numpy as np
+import rospy
+from intera_interface import Limb
+from pixel_extractor import PixelExtractor
+from path_planner import PathPlanner
+from controller import Controller
+from light_controller import LightController
+from moveit_msgs.msg import OrientationConstraint
+
+
+if __name__=="__main__":
+    rospy.init_node('moveit_node')
+
+    # Select image
+    cwd = os.path.realpath(os.path.dirname(__file__))
+    files = [filename for filename in os.listdir(cwd + "/images") if ".jpg" in filename]
+    print("\n\nInput integer of image you want: \n")
+    for i in range(len(files)):
+        print(f"{i}: {files[i]}")
+    selection = int(input("\n..."))
+    selection = int(selection)
+    img = cv2.imread(cwd + "/images/" + files[selection])
+
+    # Normalize image
+    pixel_extractor = PixelExtractor()
+    img = pixel_extractor.resize_img(img)
+    pixel_extractor.draw_image(img, "original")
+    rows = img.shape[0]      # not width of image
+    columns = img.shape[1]
+    #print(x)
+
+    # Physical properties
+    width_mm = 500         # (mm)
+    num_leds = 26
+    pixel_spacing = 6.48    # (mm)
+    width_pixels = int(width_mm / pixel_spacing) + 1
+    scale = width_pixels / img.shape[1]
+    width = int(img.shape[1] * scale)
+    height = int(img.shape[0] * scale)
+    dim = (width, height)
+    img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)      # 1 pixel = 1 led unit
+    pixel_extractor.draw_image(img, "scaled")
+
+    # Create contours and get colors
+    #width = img.shape[1]       # already defined above
+    #height = img.shape[0]
+    contours = []
+    connectors = []
+    colors = []
+    pos_path = 1       # positive path boolean
+    x_val = 0
+    y_val = 0
+    # assuming (0,0) is at top left
+    while y_val < height:
+        if pos_path:
+            img[0:5] img[5:0]
+            contours = contours.append(np.array([[0,y_val],[width,y_val]]))
+            connector = contours.append(np.array([[width,y_val],[width,y_val+num_leds]]))
+            if (y_val + num_leds) <= height:
+                colors_ = img[y_val+num_leds:y_val,:]
+                colors = colors.append(colors_[::-1,:])
+            else:
+                y_diff = y_val - height
+                dark = np.zeros((y_diff,width,3))
+                img_bottom = np.vstack((img[y_val:,:],dark))
+                colors = colors.append(img_bottom[::-1,:])
+        else:
+            contours = contours.append(np.array([[width,y_val],[0,y_val]]))
+            connector = contours.append(np.array([[0,y_val],[0,y_val+num_leds]]))
+            if (y_val + num_leds) <= height:
+                colors_ = img[y_val:y_val+num_leds,::-1]
+                colors = colors.append(colors_[::-1,:])
+            else:
+                y_diff = y_val - height
+                dark = np.zeros((y_diff,width,3))
+                img_bottom = np.vstack((img[y_val:,::-1],dark))
+                colors = colors.append(img_bottom[::-1,:])
+            # there might be an extra connector
+        y_val += num_leds
+
+
+
+
+    # Draw contours
+    contour_img = pixel_extractor.create_empty_img(height, width)
+    # contours, hierarchy = pixel_extractor.extract_contour(img)
+    # contours = pixel_extractor.filter_contours_by_len(contours)
+    # for contour in contours:
+    #     print(contour.squeeze(axis=1).shape)
+    cv2.drawContours(contour_img, contours, -1, (0, 255, 0), 1)
+    pixel_extractor.draw_image(pixel_extractor.invert_black_white(contour_img), "contours")
+
+    # Plan paths
+    path_planner = PathPlanner()
+    # input_coords = np.arange(0, 2 * np.pi, .1)
+    # simple_circle = .1 * np.array((np.cos(input_coords), 0.2 + np.sin(input_coords)))
+    # t1 = np.ones(simple_circle[0].shape).T.reshape((1, simple_circle.shape[1])) * .75
+    # t2 = simple_circle
+    # simple_circle = np.vstack((t1, t2))
+    # plan, _ = path_planner.plan_along_path(simple_circle)
+    orien_const = OrientationConstraint()           # using an orientation constraint
+    orien_const.link_name = "right_hand";
+    orien_const.header.frame_id = "base";
+    orien_const.orientation.y = -1.0;               # keep end effector pointing down
+    orien_const.absolute_x_axis_tolerance = 0.1;
+    orien_const.absolute_y_axis_tolerance = 0.1;
+    orien_const.absolute_z_axis_tolerance = 0.1;
+    orien_const.weight = 1.0;
+    # NOTE: Does this create the correct connector paths??
+    contour_paths, connector_paths = path_planner.plan_along_path(contours, width, [orien_const])
+    # print(connected_contours.shape)
+    input("check rviz bruh")
+    Kp = 0.2 * np.array([0.4, 2, 1.7, 1.5, 2, 2, 3])
+    Kd = 0.01 * np.array([2, 1, 2, 0.5, 1, 0.8, 0.8])
+    Ki = 0.01 * np.array([1.4, 1.4, 1.4, 1, 0.6, 0.6, 0.6])
+    Kw = np.array([0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9])
+    light_controller = LightController()
+    
+    # Do motion control
+    controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))           # lab 7 controller
+    # controller = path_planner           # moveit controller
+    for i in range(len(contour_paths)):
+        # controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
+        # controller.execute_plan(connector_paths[i])
+        #light_controller.off()
+        if i < len(connector_paths):
+            path = path_planner.make_paths_from_poses([connector_paths[i]])[0]
+            # TO-DO: publish color data to topic and make sure it runs at same time as excecute
+            controller.execute_plan(path)
+            
+        print(i)
+        path = path_planner.make_paths_from_poses([contour_paths[i]])
+        #light_controller.on()
+        controller.execute_plan(path[0])
+        # controller = Controller(Kp,Kd,Ki,Kw, Limb("right"))
+    
+        
+    light_controller.clear()
